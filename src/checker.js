@@ -1,5 +1,6 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { XMLParser } = require('fast-xml-parser');
 const fs = require('fs');
 const path = require('path');
 
@@ -31,6 +32,40 @@ async function fetchContent(url, selector) {
   let text = selector ? $(selector).text() : $('body').text();
   text = text.replace(/\s+/g, ' ').trim();
   return text;
+}
+
+async function fetchRssItem(url) {
+  const res = await axios.get(url, {
+    headers: { 'User-Agent': 'steamdb-discord-monitor/1.0' },
+    timeout: 30000,
+    responseType: 'text'
+  });
+  const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' });
+  const json = parser.parse(res.data);
+  let items = [];
+  if (json.rss && json.rss.channel && json.rss.channel.item) items = json.rss.channel.item;
+  else if (json.channel && json.channel.item) items = json.channel.item;
+  else if (json.feed && json.feed.entry) items = json.feed.entry;
+  if (!items) items = [];
+  if (!Array.isArray(items)) items = [items];
+  if (items.length === 0) throw new Error('No items in RSS');
+  const item = items[0];
+  const title = item.title && (typeof item.title === 'object' ? item.title['#text'] || item.title : item.title) || '';
+  let link = '';
+  if (item.link) {
+    if (typeof item.link === 'string') link = item.link;
+    else if (Array.isArray(item.link)) {
+      const l = item.link[0];
+      link = l && (l['#text'] || l['@_href'] || l.href || l.url) || '';
+    } else if (typeof item.link === 'object') {
+      link = item.link['#text'] || item.link['@_href'] || item.link.href || item.link.url || '';
+    }
+  }
+  const guid = (item.guid && (typeof item.guid === 'object' ? item.guid['#text'] || item.guid : item.guid)) || item.id || link || (title + '|' + (item.pubDate || item.published || ''));
+  const pubDate = item.pubDate || item.pubdate || item.published || item.updated || '';
+  const description = item.description || item.summary || item['content:encoded'] || item.content || '';
+  const snippet = String(description).replace(/\s+/g, ' ').trim().slice(0, 1000);
+  return { id: String(guid), title, link: link || url, pubDate, snippet };
 }
 
 function firstDiffSnippet(oldStr, newStr, context = 200) {
@@ -66,22 +101,41 @@ async function sendWebhook(embeds) {
   for (const target of config.targets) {
     console.log('Checking', target.id, target.url);
     try {
-      const current = await fetchContent(target.url, target.selector);
-      const prev = snapshots[target.id] || '';
-      if (current !== prev) {
-        changed = true;
-        const snippet = firstDiffSnippet(prev, current, 300);
-        const when = new Date().toISOString();
-        const embed = {
-          title: `${target.label || target.id} — update detected`,
-          url: target.url,
-          description: `**When:** ${when}\n**Summary:** ${snippet}`,
-          timestamp: when
-        };
-        embeds.push(embed);
-        snapshots[target.id] = current;
+      if ((target.type && target.type === 'rss') || /PatchnotesRSS|\.xml$|rss\//i.test(target.url)) {
+        const item = await fetchRssItem(target.url);
+        const prevId = snapshots[target.id] || '';
+        if (item.id !== prevId) {
+          changed = true;
+          const when = item.pubDate || new Date().toISOString();
+          const embed = {
+            title: `${target.label || target.id} — ${item.title || 'update detected'}`,
+            url: item.link || target.url,
+            description: `**When:** ${when}\n**Summary:** ${item.snippet}`,
+            timestamp: when
+          };
+          embeds.push(embed);
+          snapshots[target.id] = item.id;
+        } else {
+          console.log('No change for', target.id);
+        }
       } else {
-        console.log('No change for', target.id);
+        const current = await fetchContent(target.url, target.selector);
+        const prev = snapshots[target.id] || '';
+        if (current !== prev) {
+          changed = true;
+          const snippet = firstDiffSnippet(prev, current, 300);
+          const when = new Date().toISOString();
+          const embed = {
+            title: `${target.label || target.id} — update detected`,
+            url: target.url,
+            description: `**When:** ${when}\n**Summary:** ${snippet}`,
+            timestamp: when
+          };
+          embeds.push(embed);
+          snapshots[target.id] = current;
+        } else {
+          console.log('No change for', target.id);
+        }
       }
     } catch (err) {
       console.error('Error checking', target.id, err.message);
