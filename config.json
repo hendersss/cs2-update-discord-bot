@@ -2,10 +2,10 @@
   "discord_webhook_env": "DISCORD_WEBHOOK",
   "targets": [
     {
-      "id": "cs2-steamdb-app",
-      "label": "CS2 SteamDB app page",
-      "url": "https://steamdb.info/app/730/",
-      "selector": "body"
+      "id": "cs2-steamdb-patchnotes",
+      "label": "CS2 Patchnotes (SteamDB RSS)",
+      "url": "https://steamdb.info/api/PatchnotesRSS/?appid=730",
+      "type": "rss"
     }
   ]
 }
