@@ -41,5 +41,3 @@ git push
 3. If Actions must push `snapshots.json`, enable workflow write access:
 
 - Repository → Settings → Actions → General → Workflow permissions → set to **Read and write**
-
-That's it — use the simulator (`npm run simulate-update`) locally or the Actions simulate workflow to test sending messages without modifying snapshots.
