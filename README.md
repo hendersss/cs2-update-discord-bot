@@ -17,6 +17,3 @@ npm install
 ```bash
 DISCORD_WEBHOOK="https://discord.com/api/webhooks/..." node src/checker.js
 ```
-
-# cs2-update-discord-bot
-
