@@ -4,7 +4,8 @@
   "description": "Monitor SteamDB pages and post updates to a Discord webhook",
   "main": "src/checker.js",
   "scripts": {
-    "start": "node src/checker.js"
+    "start": "node src/checker.js",
+    "simulate-update": "node src/simulateUpdate.js"
   },
   "dependencies": {
     "axios": "^1.4.0",
