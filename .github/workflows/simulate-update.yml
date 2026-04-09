@@ -1,0 +1,43 @@
+name: Simulate update (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Embed title'
+        required: false
+        default: 'Simulated CS2 update'
+      snippet:
+        description: 'Embed snippet/summary'
+        required: false
+        default: 'This is a simulated update from GitHub Actions.'
+      mention:
+        description: 'Mention @everyone? (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run simulate-update
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          cmd="npm run simulate-update --"
+          if [ "${{ github.event.inputs.title }}" != "" ]; then cmd="$cmd --title \"${{ github.event.inputs.title }}\""; fi
+          if [ "${{ github.event.inputs.snippet }}" != "" ]; then cmd="$cmd --snippet \"${{ github.event.inputs.snippet }}\""; fi
+          if [ "${{ github.event.inputs.mention }}" = "true" ]; then cmd="$cmd --mention"; fi
+          echo "Running: $cmd"
+          eval $cmd
