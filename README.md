@@ -36,7 +36,7 @@ git push
 - Name: `DISCORD_WEBHOOK`
 - Value: your webhook URL
 
-2. The workflow `.github/workflows/check-steamdb.yml` runs on schedule (every 15 minutes), on push, and can be run manually from Actions → **Check SteamDB and Post to Discord** → **Run workflow**.
+2. The workflow `.github/workflows/check-steamdb.yml` runs on schedule (every 15 minutes), on push, and can be run manually from Actions → Check SteamDB and Post to Discord → Run workflow.
 
 3. If Actions must push `snapshots.json`, enable workflow write access:
 
