@@ -81,17 +81,34 @@ function firstDiffSnippet(oldStr, newStr, context = 200) {
   return snippet || '(content changed)';
 }
 
-async function sendWebhook(embeds) {
+async function sendWebhook(embeds, content = '', allowed_mentions = undefined) {
   if (!webhookUrl) {
     console.log('No webhook configured; set environment variable', config.discord_webhook_env || 'DISCORD_WEBHOOK');
     return;
   }
+  const payload = { embeds };
+  if (content) payload.content = content;
+  if (allowed_mentions) payload.allowed_mentions = allowed_mentions;
   try {
-    await axios.post(webhookUrl, { embeds }, { timeout: 10000 });
+    const res = await axios.post(webhookUrl, payload, { timeout: 10000 });
     console.log('Posted', embeds.length, 'embed(s) to Discord');
+    if (res && res.status) console.log('Webhook response status', res.status);
   } catch (err) {
     console.error('Failed to post to webhook', err.message);
   }
+}
+
+function shouldMentionEveryoneForText(text) {
+  const defaults = ['game update', 'game patch', 'client update', 'major update'];
+  const keys = (config.everyone_keywords && Array.isArray(config.everyone_keywords) && config.everyone_keywords.length)
+    ? config.everyone_keywords
+    : defaults;
+  const hay = (text || '').toLowerCase();
+  for (const k of keys) {
+    if (!k) continue;
+    if (hay.includes(String(k).toLowerCase())) return true;
+  }
+  return false;
 }
 
 (async () => {
@@ -113,6 +130,8 @@ async function sendWebhook(embeds) {
             description: `**When:** ${when}\n**Summary:** ${item.snippet}`,
             timestamp: when
           };
+          const textToCheck = `${item.title || ''} ${item.snippet || ''}`;
+          embed.__mentionEveryone = shouldMentionEveryoneForText(textToCheck);
           embeds.push(embed);
           snapshots[target.id] = item.id;
         } else {
@@ -131,6 +150,8 @@ async function sendWebhook(embeds) {
             description: `**When:** ${when}\n**Summary:** ${snippet}`,
             timestamp: when
           };
+          const textToCheck = `${target.label || ''} ${snippet}`;
+          embed.__mentionEveryone = shouldMentionEveryoneForText(textToCheck);
           embeds.push(embed);
           snapshots[target.id] = current;
         } else {
@@ -143,7 +164,15 @@ async function sendWebhook(embeds) {
   }
 
   if (embeds.length > 0) {
-    await sendWebhook(embeds);
+    const shouldMention = embeds.some(e => e.__mentionEveryone);
+    const content = shouldMention ? '@everyone' : '';
+    const allowed = shouldMention ? { parse: ['everyone'] } : undefined;
+    const finalEmbeds = embeds.map(e => {
+      const copy = Object.assign({}, e);
+      delete copy.__mentionEveryone;
+      return copy;
+    });
+    await sendWebhook(finalEmbeds, content, allowed);
   }
 
   if (changed) {

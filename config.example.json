@@ -1,0 +1,12 @@
+{
+  "discord_webhook_env": "DISCORD_WEBHOOK",
+  "targets": [
+    {
+      "id": "cs2-steamdb-patchnotes",
+      "label": "CS2 Patchnotes (SteamDB RSS)",
+      "url": "https://steamdb.info/api/PatchnotesRSS/?appid=730",
+      "type": "rss"
+    }
+  ],
+  "everyone_keywords": ["game update", "game patch", "client update", "major update"]
+}
