@@ -1,5 +1,4 @@
 const axios = require('axios');
-const cheerio = require('cheerio');
 const { XMLParser } = require('fast-xml-parser');
 const fs = require('fs');
 const path = require('path');
@@ -22,17 +21,6 @@ const config = loadJson(CONFIG_PATH, { discord_webhook_env: 'DISCORD_WEBHOOK', t
 const snapshots = loadJson(SNAP_PATH, {});
 
 const webhookUrl = process.env[config.discord_webhook_env] || process.env.DISCORD_WEBHOOK;
-
-async function fetchContent(url, selector) {
-  const res = await axios.get(url, {
-    headers: { 'User-Agent': 'steamdb-discord-monitor/1.0' },
-    timeout: 30000
-  });
-  const $ = cheerio.load(res.data);
-  let text = selector ? $(selector).text() : $('body').text();
-  text = text.replace(/\s+/g, ' ').trim();
-  return text;
-}
 
 async function fetchRssItem(url) {
   const res = await axios.get(url, {
@@ -68,18 +56,6 @@ async function fetchRssItem(url) {
   return { id: String(guid), title, link: link || url, pubDate, snippet };
 }
 
-function firstDiffSnippet(oldStr, newStr, context = 200) {
-  const minLen = Math.min(oldStr.length, newStr.length);
-  let i = 0;
-  while (i < minLen && oldStr[i] === newStr[i]) i++;
-  const start = Math.max(0, i - context);
-  const end = Math.min(newStr.length, i + context);
-  let snippet = newStr.slice(start, end).trim();
-  snippet = snippet.replace(/\s+/g, ' ');
-  if (start > 0) snippet = '... ' + snippet;
-  if (end < newStr.length) snippet = snippet + ' ...';
-  return snippet || '(content changed)';
-}
 
 async function sendWebhook(embeds, content = '', allowed_mentions = undefined) {
   if (!webhookUrl) {
