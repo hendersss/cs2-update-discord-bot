@@ -40,4 +40,4 @@ git push
 
 3. If Actions must push `snapshots.json`, enable workflow write access:
 
-- Repository → Settings → Actions → General → Workflow permissions → set to **Read and write**
+- Repository → Settings → Actions → General → Workflow permissions → set to Read and write
