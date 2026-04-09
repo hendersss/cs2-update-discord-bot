@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SteamDB → Discord monitor
 
 This project polls configured SteamDB pages and posts concise embed updates to a Discord webhook when content changes.
@@ -27,3 +28,7 @@ Notes about Vercel and hosting:
 If you want, I can:
 - Push this repo to GitHub and help set the `DISCORD_WEBHOOK` secret.
 - Adapt the monitor to run as a Vercel cron function with external storage (if you prefer Vercel).
+=======
+# cs2-update-discord-bot
+discord bot that sends updates about the game CS2
+>>>>>>> origin/main
