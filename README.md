@@ -119,9 +119,6 @@ curl -H "Content-Type: application/json" \
 	'https://discord.com/api/webhooks/...'
 ```
 
-## @everyone behaviour
-
-- The monitor includes `@everyone` only when the update text contains any keyword from `everyone_keywords` (from `config.json`), or when you explicitly force it via the simulator with `--mention`. The monitor sends `allowed_mentions: { parse: ["everyone"] }` so only intended pings occur.
 
 ## Troubleshooting
 
