@@ -33,10 +33,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ -n "$(git status --porcelain)" ]; then
-            git add snapshots.json
+          # Stage only snapshots.json, then check if there are staged changes to commit
+          git add snapshots.json || true
+          if git diff --cached --quiet --exit-code; then
+            echo "No changes to commit"
+          else
             git commit -m "Update snapshots [skip ci]"
             git push
-          else
-            echo "No changes to commit"
           fi
