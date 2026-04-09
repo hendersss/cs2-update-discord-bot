@@ -1,0 +1,11 @@
+{
+  "discord_webhook_env": "DISCORD_WEBHOOK",
+  "targets": [
+    {
+      "id": "cs2-steamdb-app",
+      "label": "CS2 SteamDB app page",
+      "url": "https://steamdb.info/app/730/",
+      "selector": "body"
+    }
+  ]
+}

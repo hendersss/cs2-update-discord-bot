@@ -1,0 +1,16 @@
+{
+  "name": "steamdb-discord-monitor",
+  "version": "0.1.0",
+  "description": "Monitor SteamDB pages and post updates to a Discord webhook",
+  "main": "src/checker.js",
+  "scripts": {
+    "start": "node src/checker.js"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "cheerio": "^1.0.0-rc.12"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
