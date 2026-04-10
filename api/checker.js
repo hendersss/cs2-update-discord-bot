@@ -5,6 +5,7 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO = process.env.GITHUB_REPO; // owner/repo
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
+const CRON_SECRET = process.env.CRON_SECRET || null;
 
 function githubApi() {
   return axios.create({
@@ -34,6 +35,15 @@ async function updateRepoFile(api, owner, repo, path, contentBase64, sha) {
 }
 
 module.exports = async (req, res) => {
+  // If CRON_SECRET is configured, require it in header `x-cron-secret` or query `?secret=`.
+  if (CRON_SECRET) {
+    const q = (req.query && typeof req.query === 'object') ? req.query : {};
+    const provided = (req.headers && (req.headers['x-cron-secret'] || req.headers['x-cron-token'])) || q.secret || null;
+    if (!provided || provided !== CRON_SECRET) {
+      res.status(401).json({ ok: false, error: 'Invalid or missing CRON_SECRET' });
+      return;
+    }
+  }
   if (!GITHUB_TOKEN || !GITHUB_REPO) {
     res.status(400).json({ ok: false, error: 'GITHUB_TOKEN and GITHUB_REPO env vars are required' });
     return;
