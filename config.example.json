@@ -1,5 +1,7 @@
 {
   "discord_webhook_env": "DISCORD_WEBHOOK",
+  "notify_file_changes": false,
+  "notify_branch_updates": false,
   "targets": [
     {
       "id": "cs2-steamdb-patchnotes",

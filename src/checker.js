@@ -17,7 +17,7 @@ function loadJson(filePath, fallback) {
   return fallback;
 }
 
-const config = loadJson(CONFIG_PATH, { discord_webhook_env: 'DISCORD_WEBHOOK', targets: [] });
+const config = loadJson(CONFIG_PATH, { discord_webhook_env: 'DISCORD_WEBHOOK', targets: [], notify_file_changes: false, notify_branch_updates: false });
 const snapshots = loadJson(SNAP_PATH, {});
 
 const webhookUrl = process.env[config.discord_webhook_env] || process.env.DISCORD_WEBHOOK;
@@ -100,10 +100,31 @@ function shouldMentionEveryoneForText(text) {
         if (item.id !== prevId) {
           changed = true;
           const when = item.pubDate || new Date().toISOString();
+
+          const titleAndSnippet = `${item.title || ''} ${item.snippet || ''}`;
+          const isFileUpdate = /\bfiles?\s+updated\b/i.test(titleAndSnippet);
+          const isBranchUpdate = /\bbranch\s+updated\b/i.test(titleAndSnippet);
+
+          if ((isFileUpdate && !config.notify_file_changes) || (isBranchUpdate && !config.notify_branch_updates)) {
+            console.log(`Skipping ${isFileUpdate ? 'file' : 'branch'} update for`, target.id);
+            snapshots[target.id] = item.id;
+            continue;
+          }
+
+          // Try to extract a changelist id from snippet/title/link
+          let changelistId = null;
+          const hay = `${item.snippet || ''} ${item.title || ''} ${item.link || ''}`;
+          const m = hay.match(/changelist\s*[:#]?\s*(\d{5,})/i);
+          if (m) changelistId = m[1];
+          else {
+            const m2 = (item.link || '').match(/changelist\/(\d+)/i);
+            if (m2) changelistId = m2[1];
+          }
+
           const embed = {
             title: `${target.label || target.id} — ${item.title || 'update detected'}`,
-            url: item.link || target.url,
-            description: `**When:** ${when}\n**Summary:** ${item.snippet}`,
+            url: changelistId ? `https://steamdb.info/changelist/${changelistId}/` : (item.link || target.url),
+            description: `**When:** ${when}\n**Summary:** ${item.snippet}${changelistId ? `\n\nChangelist: https://steamdb.info/changelist/${changelistId}/` : ''}`,
             timestamp: when
           };
           const textToCheck = `${item.title || ''} ${item.snippet || ''}`;

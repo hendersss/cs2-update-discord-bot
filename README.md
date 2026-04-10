@@ -18,6 +18,12 @@ $env:DISCORD_WEBHOOK='https://discord.com/api/webhooks/...'
 node src/checker.js
 ```
 
+## Config options
+
+- `notify_file_changes`: boolean — Set to `true` to receive notifications when SteamDB reports file changes (includes changelist links). Defaults to `false`.
+- `notify_branch_updates`: boolean — Set to `true` to receive notifications when SteamDB reports branch updates. Defaults to `false`.
+
+
 3. To avoid the initial notification (seed snapshots without sending):
 
 ```powershell
