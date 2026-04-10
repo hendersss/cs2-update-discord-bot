@@ -33,17 +33,3 @@ git add snapshots.json
 git commit -m "Initialize snapshots"
 git push
 ```
-
-## GitHub Actions (recommended hosting)
-
-1. Add webhook secret:
-
-- Repository → Settings → Secrets and variables → Actions → New repository secret
-- Name: `DISCORD_WEBHOOK`
-- Value: your webhook URL
-
-2. The workflow `.github/workflows/check-steamdb.yml` runs on schedule (every 5 minutes), on push, and can be run manually from Actions → Check SteamDB and Post to Discord → Run workflow.
-
-3. If Actions must push `snapshots.json`, enable workflow write access:
-
-- Repository → Settings → Actions → General → Workflow permissions → set to Read and write
