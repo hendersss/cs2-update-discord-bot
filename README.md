@@ -59,7 +59,7 @@ Steps:
   - `GITHUB_TOKEN` = a GitHub Personal Access Token with `repo` scope (needed to read/write `snapshots.json` and read `config.json`)
   - `GITHUB_REPO` = `owner/repo` (for example `hendersss/cs2-update-webhook-for-discord`)
   - (optional) `GITHUB_BRANCH` = branch name (defaults to `main`)
-  - (recommended) `CRON_SECRET` = a random string; the endpoint will require this header `x-cron-secret` or `?secret=` to run.
+  - (optional) `CRON_SECRET` = a random string; if set, the endpoint will require this header `x-cron-secret` or `?secret=` to run. (Leave unset to allow cron services without headers.)
 
 - Create an external cron job (e.g. https://cron-job.org):
   - URL: `https://<your-project>.vercel.app/api/checker`
