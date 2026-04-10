@@ -1,6 +1,17 @@
 const axios = require('axios');
 const { runMonitor } = require('../src/monitor');
 
+// Capture Node warnings (including deprecation warnings like DEP0169)
+// This logs the full stack to Vercel logs so we can identify the originating module.
+process.on('warning', (warning) => {
+  try {
+    console.warn('Node warning:', warning.name, '-', warning.message);
+    if (warning.stack) console.warn(warning.stack);
+  } catch (e) {
+    // ignore
+  }
+});
+
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO = process.env.GITHUB_REPO; // owner/repo
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
