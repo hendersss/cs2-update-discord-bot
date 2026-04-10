@@ -100,7 +100,7 @@ function shouldMentionEveryoneForText(text, config) {
   return false;
 }
 
-async function runMonitor({ config = {}, snapshots = {}, webhookUrl }) {
+async function runMonitor({ config = {}, snapshots = {}, webhookUrl, send = true }) {
   const embeds = [];
   let changed = false;
   const newSnapshots = Object.assign({}, snapshots || {});
@@ -189,26 +189,25 @@ async function runMonitor({ config = {}, snapshots = {}, webhookUrl }) {
     }
   }
 
-  if (embeds.length > 0) {
-    const mentionEmbeds = embeds.filter(e => e.__mentionEveryone).map(e => {
-      const copy = Object.assign({}, e);
-      delete copy.__mentionEveryone;
-      return copy;
-    });
-    const otherEmbeds = embeds.filter(e => !e.__mentionEveryone).map(e => {
-      const copy = Object.assign({}, e);
-      delete copy.__mentionEveryone;
-      return copy;
-    });
-    if (mentionEmbeds.length > 0) {
-      await sendWebhook(mentionEmbeds, '@everyone', { parse: ['everyone'] }, webhookUrl);
-    }
-    if (otherEmbeds.length > 0) {
-      await sendWebhook(otherEmbeds, '', undefined, webhookUrl);
-    }
+  const mentionEmbeds = embeds.filter(e => e.__mentionEveryone).map(e => {
+    const copy = Object.assign({}, e);
+    delete copy.__mentionEveryone;
+    return copy;
+  });
+  const otherEmbeds = embeds.filter(e => !e.__mentionEveryone).map(e => {
+    const copy = Object.assign({}, e);
+    delete copy.__mentionEveryone;
+    return copy;
+  });
+
+  if (send && mentionEmbeds.length > 0) {
+    await sendWebhook(mentionEmbeds, '@everyone', { parse: ['everyone'] }, webhookUrl);
+  }
+  if (send && otherEmbeds.length > 0) {
+    await sendWebhook(otherEmbeds, '', undefined, webhookUrl);
   }
 
-  return { changed, snapshots: newSnapshots };
+  return { changed, snapshots: newSnapshots, embeds };
 }
 
-module.exports = { runMonitor };
+module.exports = { runMonitor, sendWebhook };
