@@ -38,8 +38,20 @@ module.exports = async (req, res) => {
   // If CRON_SECRET is configured, require it in header `x-cron-secret` or query `?secret=`.
   if (CRON_SECRET) {
     const q = (req.query && typeof req.query === 'object') ? req.query : {};
-    const provided = (req.headers && (req.headers['x-cron-secret'] || req.headers['x-cron-token'])) || q.secret || null;
+    const providedHeader = req.headers && (req.headers['x-cron-secret'] || req.headers['x-cron-token']);
+    const providedQuery = q.secret;
+    // Debug logging: show whether header/query key is present (do not log secret value)
+    try {
+      console.log('Incoming header keys:', Object.keys(req.headers || {}));
+      console.log('Incoming query keys:', Object.keys(q || {}));
+      if (providedHeader) console.log('x-cron-secret header present (length:', String(providedHeader).length + ')');
+      if (providedQuery) console.log('query secret present (length:', String(providedQuery).length + ')');
+    } catch (e) {
+      // ignore logging failures
+    }
+    const provided = providedHeader || providedQuery || null;
     if (!provided || provided !== CRON_SECRET) {
+      console.warn('Invalid or missing CRON_SECRET - headerPresent:', !!providedHeader, 'queryPresent:', !!providedQuery);
       res.status(401).json({ ok: false, error: 'Invalid or missing CRON_SECRET' });
       return;
     }
