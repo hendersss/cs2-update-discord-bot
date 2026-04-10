@@ -127,10 +127,25 @@ module.exports = async (req, res) => {
         res.status(200).json({ ok: true, changed: true });
         return;
       } catch (e) {
-        console.warn('Failed to update snapshots (attempt', attempt + 1, ')', e && e.message ? e.message : e);
-        // If last attempt, fail
+        // Log details to help debug GitHub API 403s (permission/branch-protection)
+        try {
+          console.warn('Failed to update snapshots (attempt', attempt + 1, ')', e && e.message ? e.message : e);
+          if (e && e.response) {
+            console.warn('GitHub API response status:', e.response.status);
+            try {
+              console.warn('GitHub API response body:', JSON.stringify(e.response.data));
+            } catch (je) {
+              console.warn('GitHub API response body (stringify failed):', e.response.data);
+            }
+          }
+        } catch (le) {
+          // ignore logging errors
+        }
+
+        // If last attempt, return the GitHub response body when available
         if (attempt === 2) {
-          res.status(500).json({ ok: false, error: 'Failed to update snapshots after retries', details: e && e.message ? e.message : e });
+          const details = (e && e.response && e.response.data) ? e.response.data : (e && e.message ? e.message : String(e));
+          res.status(500).json({ ok: false, error: 'Failed to update snapshots after retries', details });
           return;
         }
 
