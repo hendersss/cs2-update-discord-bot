@@ -64,11 +64,26 @@ async function sendWebhook(embeds, content = '', allowed_mentions = undefined, w
   if (content) payload.content = content;
   if (allowed_mentions) payload.allowed_mentions = allowed_mentions;
   try {
+    // Log the payload we're about to send to help debug 400 responses
+    try {
+      console.log('Posting webhook payload:', JSON.stringify(payload));
+    } catch (e) {
+      console.log('Posting webhook payload (stringify failed)');
+    }
     const res = await axios.post(webhookUrl, payload, { timeout: 10000 });
     console.log('Posted', embeds.length, 'embed(s) to Discord');
     if (res && res.status) console.log('Webhook response status', res.status);
   } catch (err) {
-    console.error('Failed to post to webhook', err.message);
+    // Provide richer error details to diagnose Discord 400 responses
+    try {
+      if (err.response) {
+        console.error('Failed to post to webhook:', err.response.status, err.response.data);
+      } else {
+        console.error('Failed to post to webhook', err.message);
+      }
+    } catch (e) {
+      console.error('Failed to post to webhook; and error logging failed', e && e.message ? e.message : e);
+    }
   }
 }
 
@@ -119,11 +134,23 @@ async function runMonitor({ config = {}, snapshots = {}, webhookUrl }) {
             if (m2) changelistId = m2[1];
           }
 
+          // normalize timestamp to ISO8601 string for Discord embeds
+          const normalizeTimestamp = (whenVal) => {
+            try {
+              if (!whenVal) return new Date().toISOString();
+              const d = new Date(whenVal);
+              if (!isNaN(d.getTime())) return d.toISOString();
+              return new Date().toISOString();
+            } catch (e) {
+              return new Date().toISOString();
+            }
+          };
+
           const embed = {
             title: `${target.label || target.id} — ${item.title || 'update detected'}`,
             url: changelistId ? `https://steamdb.info/changelist/${changelistId}/` : (item.link || target.url),
             description: `**When:** ${when}\n**Summary:** ${item.snippet}${changelistId ? `\n\nChangelist: https://steamdb.info/changelist/${changelistId}/` : ''}`,
-            timestamp: when
+            timestamp: normalizeTimestamp(when)
           };
           const textToCheck = `${item.title || ''} ${item.snippet || ''}`;
           const isGameUpdate = !isFileUpdate && !isBranchUpdate;
