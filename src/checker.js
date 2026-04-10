@@ -128,7 +128,8 @@ function shouldMentionEveryoneForText(text) {
             timestamp: when
           };
           const textToCheck = `${item.title || ''} ${item.snippet || ''}`;
-          embed.__mentionEveryone = shouldMentionEveryoneForText(textToCheck);
+          const isGameUpdate = !isFileUpdate && !isBranchUpdate;
+          embed.__mentionEveryone = isGameUpdate && shouldMentionEveryoneForText(textToCheck);
           embeds.push(embed);
           snapshots[target.id] = item.id;
         } else {
@@ -148,7 +149,10 @@ function shouldMentionEveryoneForText(text) {
             timestamp: when
           };
           const textToCheck = `${target.label || ''} ${snippet}`;
-          embed.__mentionEveryone = shouldMentionEveryoneForText(textToCheck);
+          const isFileUpdate = /\bfiles?\s+updated\b/i.test(textToCheck);
+          const isBranchUpdate = /\bbranch\s+updated\b/i.test(textToCheck);
+          const isGameUpdate = !isFileUpdate && !isBranchUpdate;
+          embed.__mentionEveryone = isGameUpdate && shouldMentionEveryoneForText(textToCheck);
           embeds.push(embed);
           snapshots[target.id] = current;
         } else {
@@ -161,15 +165,22 @@ function shouldMentionEveryoneForText(text) {
   }
 
   if (embeds.length > 0) {
-    const shouldMention = embeds.some(e => e.__mentionEveryone);
-    const content = shouldMention ? '@everyone' : '';
-    const allowed = shouldMention ? { parse: ['everyone'] } : undefined;
-    const finalEmbeds = embeds.map(e => {
+    const mentionEmbeds = embeds.filter(e => e.__mentionEveryone).map(e => {
       const copy = Object.assign({}, e);
       delete copy.__mentionEveryone;
       return copy;
     });
-    await sendWebhook(finalEmbeds, content, allowed);
+    const otherEmbeds = embeds.filter(e => !e.__mentionEveryone).map(e => {
+      const copy = Object.assign({}, e);
+      delete copy.__mentionEveryone;
+      return copy;
+    });
+    if (mentionEmbeds.length > 0) {
+      await sendWebhook(mentionEmbeds, '@everyone', { parse: ['everyone'] });
+    }
+    if (otherEmbeds.length > 0) {
+      await sendWebhook(otherEmbeds);
+    }
   }
 
   if (changed) {
