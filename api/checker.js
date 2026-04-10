@@ -45,6 +45,20 @@ async function updateRepoFile(api, owner, repo, path, contentBase64, sha) {
 }
 
 module.exports = async (req, res) => {
+  try {
+    // Log basic incoming request details to help diagnose cron provider behavior
+    const method = req.method;
+    const url = req.url || req.originalUrl || '';
+    const headerKeys = req.headers ? Object.keys(req.headers) : [];
+    console.log('Incoming request:', method, url);
+    console.log('Incoming header keys:', headerKeys);
+    // If present, show X-Forwarded-For to help identify requester
+    if (req.headers && req.headers['x-forwarded-for']) {
+      console.log('x-forwarded-for:', req.headers['x-forwarded-for']);
+    }
+  } catch (e) {
+    // ignore logging errors
+  }
   if (!GITHUB_TOKEN || !GITHUB_REPO) {
     res.status(400).json({ ok: false, error: 'GITHUB_TOKEN and GITHUB_REPO env vars are required' });
     return;
