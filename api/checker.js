@@ -46,23 +46,57 @@ async function updateRepoFile(api, owner, repo, path, contentBase64, sha) {
 }
 
 module.exports = async (req, res) => {
-  // If CRON_SECRET is configured, require it in header `x-cron-secret` or query `?secret=`.
+  // If CRON_SECRET is configured, require it in a header or query `?secret=`.
   if (CRON_SECRET) {
     const q = (req.query && typeof req.query === 'object') ? req.query : {};
-    const providedHeader = req.headers && (req.headers['x-cron-secret'] || req.headers['x-cron-token']);
+    const headers = req.headers || {};
+
+    // Try to find a sensible header that might contain the secret. Accept common names:
+    // - x-cron-secret, x-cron-token, secret, authorization, or any header containing 'secret' or 'token'.
+    let providedHeaderRaw = null;
+    let matchedHeaderName = null;
+    for (const h of Object.keys(headers)) {
+      const lname = h.toLowerCase();
+      if (lname === 'authorization') {
+        providedHeaderRaw = headers[h];
+        matchedHeaderName = h;
+        break;
+      }
+      if (lname === 'x-cron-secret' || lname === 'x-cron-token' || lname === 'secret') {
+        providedHeaderRaw = headers[h];
+        matchedHeaderName = h;
+        break;
+      }
+      if (lname.includes('secret') || lname.includes('token')) {
+        providedHeaderRaw = headers[h];
+        matchedHeaderName = h;
+        break;
+      }
+    }
+
+    // Normalize Authorization: Bearer <token> -> token
+    let providedHeader = null;
+    if (providedHeaderRaw && typeof providedHeaderRaw === 'string') {
+      const v = providedHeaderRaw.trim();
+      if (/^bearer\s+/i.test(v)) providedHeader = v.replace(/^bearer\s+/i, '').trim();
+      else providedHeader = v;
+    }
+
     const providedQuery = q.secret;
-    // Debug logging: show whether header/query key is present (do not log secret value)
+
+    // Debug logging: indicate presence (do not log secret value)
     try {
-      console.log('Incoming header keys:', Object.keys(req.headers || {}));
+      console.log('Incoming header keys:', Object.keys(headers));
       console.log('Incoming query keys:', Object.keys(q || {}));
-      if (providedHeader) console.log('x-cron-secret header present (length:', String(providedHeader).length + ')');
+      if (matchedHeaderName) console.log(`${matchedHeaderName} header present (length:`, String(providedHeader).length + ')');
       if (providedQuery) console.log('query secret present (length:', String(providedQuery).length + ')');
     } catch (e) {
       // ignore logging failures
     }
+
     const provided = providedHeader || providedQuery || null;
     if (!provided || provided !== CRON_SECRET) {
-      console.warn('Invalid or missing CRON_SECRET - headerPresent:', !!providedHeader, 'queryPresent:', !!providedQuery);
+      console.warn('Invalid or missing CRON_SECRET - headerPresent:', !!matchedHeaderName, 'queryPresent:', !!providedQuery);
       res.status(401).json({ ok: false, error: 'Invalid or missing CRON_SECRET' });
       return;
     }
